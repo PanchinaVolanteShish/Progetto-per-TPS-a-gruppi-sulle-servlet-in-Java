@@ -1,10 +1,50 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <title>Start Page</title>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-    </head>
-    <body>
-        <h1>Hello World!</h1>
-    </body>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestione Categorie - Northwind</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f4f4f4; }
+        form { margin-bottom: 20px; padding: 15px; border: 1px solid #ccc; background-color: #f9f9f9; }
+        input[type="text"] { margin-right: 10px; padding: 5px; }
+        button { padding: 5px 10px; cursor: pointer; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+    <h2>Gestione Categorie (Northwind)</h2>
+
+    
+    <form id="categoryForm">
+        <input type="hidden" id="categoryId"> 
+        
+        <label for="categoryName">Nome Categoria:</label>
+        <input type="text" id="categoryName" required>
+        
+        <label for="description">Descrizione:</label>
+        <input type="text" id="description" required>
+        
+        <button type="submit" id="submitBtn">Salva</button>
+        <button type="button" onclick="resetForm()">Annulla</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome Categoria</th>
+                <th>Descrizione</th>
+                <th>Azioni</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+    </table>
+
+    <script src="app.js"></script>
+</body>
 </html>
