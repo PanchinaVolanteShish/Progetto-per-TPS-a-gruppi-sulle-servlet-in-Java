@@ -15,9 +15,7 @@ public class SupplierDAO {
         this.emf = emf;
     }
 
-    // ───────────────────────────────────────────
-    // READ ALL — restituisce tutti i fornitori
-    // ───────────────────────────────────────────
+    // restituisce tutti i fornitori
     public List<Supplier> findAll() {
         EntityManager em = emf.createEntityManager();
         try {
@@ -30,9 +28,7 @@ public class SupplierDAO {
         }
     }
 
-    // ───────────────────────────────────────────
-    // READ ONE — restituisce un fornitore per ID
-    // ───────────────────────────────────────────
+    //restituisce un fornitore per ID
     public Supplier findById(int id) {
         EntityManager em = emf.createEntityManager();
         try {
@@ -42,9 +38,7 @@ public class SupplierDAO {
         }
     }
 
-    // ───────────────────────────────────────────
-    // CREATE — inserisce un nuovo fornitore
-    // ───────────────────────────────────────────
+    // CREATE nuovo fornitore
     public Supplier save(Supplier supplier) {
         EntityManager em = emf.createEntityManager();
         EntityTransaction tx = em.getTransaction();
@@ -61,9 +55,7 @@ public class SupplierDAO {
         }
     }
 
-    // ───────────────────────────────────────────
-    // UPDATE — modifica un fornitore esistente
-    // ───────────────────────────────────────────
+    // UPDATE un fornitore esistente
     public Supplier update(Supplier supplier) {
         EntityManager em = emf.createEntityManager();
         EntityTransaction tx = em.getTransaction();
@@ -80,9 +72,7 @@ public class SupplierDAO {
         }
     }
 
-    // ───────────────────────────────────────────
-    // DELETE — elimina un fornitore per ID
-    // ───────────────────────────────────────────
+    // DELETE un fornitore per ID
     public boolean delete(int id) {
         EntityManager em = emf.createEntityManager();
         EntityTransaction tx = em.getTransaction();
