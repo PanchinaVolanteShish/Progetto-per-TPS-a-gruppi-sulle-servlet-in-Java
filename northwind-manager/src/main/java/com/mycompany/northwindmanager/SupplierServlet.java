@@ -14,7 +14,7 @@ public class SupplierServlet extends HttpServlet {
 
     private SupplierDAO dao;
 
-    @Override
+    @Override //gli passa il DAO
     public void init() throws ServletException {
         dao = new SupplierDAO(HibernateUtil.getEntityManagerFactory());
     }

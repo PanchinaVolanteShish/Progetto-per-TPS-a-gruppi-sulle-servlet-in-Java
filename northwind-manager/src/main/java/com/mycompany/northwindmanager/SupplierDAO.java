@@ -17,12 +17,12 @@ public class SupplierDAO {
 
     // restituisce tutti i fornitori
     public List<Supplier> findAll() {
-        EntityManager em = emf.createEntityManager();
+        EntityManager em = emf.createEntityManager(); //sessione con db
         try {
             TypedQuery<Supplier> query = em.createQuery(
                 "SELECT s FROM Supplier s", Supplier.class
             );
-            return query.getResultList();
+            return query.getResultList(); //esegue la query
         } finally {
             em.close();
         }
@@ -43,12 +43,12 @@ public class SupplierDAO {
         EntityManager em = emf.createEntityManager();
         EntityTransaction tx = em.getTransaction();
         try {
-            tx.begin();
-            em.persist(supplier);
-            tx.commit();
+            tx.begin(); //inizia a tenere traccia delle modifiche
+            em.persist(supplier); //crea l'elemento
+            tx.commit(); //lo aggiunge
             return supplier;
         } catch (Exception e) {
-            if (tx.isActive()) tx.rollback();
+            if (tx.isActive()) tx.rollback(); //se fallisce torna a quella prima
             throw e;
         } finally {
             em.close();
@@ -61,7 +61,7 @@ public class SupplierDAO {
         EntityTransaction tx = em.getTransaction();
         try {
             tx.begin();
-            Supplier updated = em.merge(supplier);
+            Supplier updated = em.merge(supplier); //aggiorna un elemento esistente
             tx.commit();
             return updated;
         } catch (Exception e) {
@@ -81,7 +81,7 @@ public class SupplierDAO {
             Supplier supplier = em.find(Supplier.class, id);
             if (supplier == null) {
                 tx.rollback();
-                return false; // ID non trovato
+                return false; //ID non trovato
             }
             em.remove(supplier);
             tx.commit();
