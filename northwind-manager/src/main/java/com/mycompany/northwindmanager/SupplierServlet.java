@@ -25,15 +25,82 @@ public class SupplierServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        // TODO Mauro
-        resp.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED, "GET non ancora implementata");
+    
+        setJsonResponse(resp);
+    
+        String pathInfo = req.getPathInfo();
+    
+        // GET /api/suppliers/ → lista tutti
+        if (pathInfo == null || pathInfo.equals("/")) {
+            try {
+                List<Supplier> suppliers = dao.findAll();
+                StringBuilder json = new StringBuilder("[");
+                for (int i = 0; i < suppliers.size(); i++) {
+                    if (i > 0) json.append(",");
+                    json.append(toJson(suppliers.get(i)));
+                }
+                json.append("]");
+                resp.setStatus(HttpServletResponse.SC_OK);
+                resp.getWriter().write(json.toString());
+            } catch (Exception e) {
+                sendError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                        "Errore recupero fornitori: " + e.getMessage());
+            }
+            return;
+        }
+    
+        // GET /api/suppliers/{id} → uno solo
+        int id = extractId(req, resp);
+        if (id == -1) return;
+    
+        Supplier supplier = dao.findById(id);
+        if (supplier == null) {
+            sendError(resp, HttpServletResponse.SC_NOT_FOUND,
+                    "Fornitore con ID " + id + " non trovato");
+            return;
+        }
+    
+        resp.setStatus(HttpServletResponse.SC_OK);
+        resp.getWriter().write(toJson(supplier));
     }
-
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        // TODO Mauro
-        resp.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED, "POST non ancora implementata");
+    
+        setJsonResponse(resp);
+    
+        // POST deve essere su /api/suppliers/ senza ID
+        String pathInfo = req.getPathInfo();
+        if (pathInfo != null && !pathInfo.equals("/")) {
+            sendError(resp, HttpServletResponse.SC_BAD_REQUEST,
+                    "POST non accetta ID nell'URL. Usa /api/suppliers/");
+            return;
+        }
+    
+        String body        = readBody(req);
+        String companyName = extractJsonField(body, "companyName");
+        String contactName = extractJsonField(body, "contactName");
+        String country     = extractJsonField(body, "country");
+    
+        if (companyName == null || companyName.isBlank()) {
+            sendError(resp, HttpServletResponse.SC_UNPROCESSABLE_ENTITY,
+                    "Il campo 'companyName' e' obbligatorio");
+            return;
+        }
+    
+        Supplier supplier = new Supplier();
+        supplier.setCompanyName(companyName);
+        if (contactName != null) supplier.setContactName(contactName);
+        if (country     != null) supplier.setCountry(country);
+    
+        try {
+            Supplier created = dao.save(supplier);
+            resp.setStatus(HttpServletResponse.SC_CREATED);
+            resp.getWriter().write(toJson(created));
+        } catch (Exception e) {
+            sendError(resp, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                    "Errore creazione fornitore: " + e.getMessage());
+        }
     }
 
     // ═══════════════════════════════════════════
