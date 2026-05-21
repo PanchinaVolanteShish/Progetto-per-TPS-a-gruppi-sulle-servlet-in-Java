@@ -1,113 +1,181 @@
-const API_URL = '/api/categories'; 
+const API_URL = '/api/suppliers';
 
-window.onload = function() {
-    loadCategories();
-    
-    document.getElementById('categoryForm').addEventListener('submit', handleFormSubmit);
+window.onload = function () {
+    loadSuppliers();
+    document.getElementById('supplierForm').addEventListener('submit', handleFormSubmit);
 };
 
-
-// get per popolare la tabella
-function loadCategories() {
+// ── GET: carica tutti i fornitori nella tabella ──────────────────────────────
+function loadSuppliers() {
     const xhr = new XMLHttpRequest();
-    xhr.open('GET', API_URL, true);
-    
-    xhr.onload = function() {
+    xhr.open('GET', API_URL + '/', true);
+
+    xhr.onload = function () {
         if (xhr.status === 200) {
-            const categories = JSON.parse(xhr.responseText);
+            const suppliers = JSON.parse(xhr.responseText);
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
-            
-            categories.forEach(cat => {
+
+            if (suppliers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:#999;">Nessun fornitore trovato.</td></tr>';
+                return;
+            }
+
+            suppliers.forEach(s => {
                 const tr = document.createElement('tr');
-                
                 tr.innerHTML = `
-                    <td>${cat.id}</td>
-                    <td>${cat.name}</td>
-                    <td>${cat.description}</td>
+                    <td>${s.supplierID}</td>
+                    <td>${esc(s.companyName)}</td>
+                    <td>${esc(s.contactName)}</td>
+                    <td>${esc(s.contactTitle)}</td>
+                    <td>${esc(s.city)}</td>
+                    <td>${esc(s.country)}</td>
+                    <td>${esc(s.phone)}</td>
                     <td>
-                        <button onclick="editCategory(${cat.id}, '${cat.name.replace(/'/g, "\\'")}', '${cat.description.replace(/'/g, "\\'")}')">Modifica</button>
-                        <button onclick="deleteCategory(${cat.id})">Elimina</button>
+                        <button class="btn-edit"   onclick="editSupplier(${s.supplierID})">✏️ Modifica</button>
+                        <button class="btn-delete" onclick="deleteSupplier(${s.supplierID})">🗑️ Elimina</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
         } else {
-            console.error('Errore nel caricamento delle categorie.');
+            setStatus('Errore nel caricamento dei fornitori (HTTP ' + xhr.status + ')');
         }
     };
-    
+
+    xhr.onerror = function () { setStatus('Errore di rete.'); };
     xhr.send();
 }
 
-//post: se c'è l'id modifica se no inserisce 
+// ── POST / PUT ───────────────────────────────────────────────────────────────
 function handleFormSubmit(event) {
     event.preventDefault();
-    
-    const id = document.getElementById('categoryId').value;
-    const name = document.getElementById('categoryName').value;
-    const description = document.getElementById('description').value;
-    
-    // crea l'oggetto da inviare
-    const categoryData = {
-        name: name,
-        description: description
+    setStatus('');
+
+    const id = document.getElementById('supplierId').value;
+
+    const data = {
+        companyName:  document.getElementById('companyName').value.trim(),
+        contactName:  document.getElementById('contactName').value.trim(),
+        contactTitle: document.getElementById('contactTitle').value.trim(),
+        address:      document.getElementById('address').value.trim(),
+        city:         document.getElementById('city').value.trim(),
+        region:       document.getElementById('region').value.trim(),
+        postalCode:   document.getElementById('postalCode').value.trim(),
+        country:      document.getElementById('country').value.trim(),
+        phone:        document.getElementById('phone').value.trim(),
+        fax:          document.getElementById('fax').value.trim(),
+        homePage:     document.getElementById('homePage').value.trim()
     };
-    
-    const xhr = new XMLHttpRequest();
-    
-    // se c'è un ID è una modifica (PUT) altrimenti è un inserimento (POST)
-    if (id) {
-        categoryData.id = parseInt(id);
-        xhr.open('PUT', API_URL, true);
-    } else {
-        xhr.open('POST', API_URL, true);
+
+    if (!data.companyName) {
+        setStatus('Il campo "Ragione Sociale" è obbligatorio.');
+        return;
     }
-    
+
+    const xhr = new XMLHttpRequest();
+
+    if (id) {
+        // PUT /api/suppliers/{id}
+        xhr.open('PUT', API_URL + '/' + id, true);
+    } else {
+        // POST /api/suppliers/
+        xhr.open('POST', API_URL + '/', true);
+    }
+
     xhr.setRequestHeader('Content-Type', 'application/json');
-    
-    xhr.onload = function() {
+
+    xhr.onload = function () {
         if (xhr.status === 200 || xhr.status === 201) {
             resetForm();
-            loadCategories(); //ricarica tabella
+            loadSuppliers();
         } else {
-            alert('Errore durante il salvataggio.');
+            try {
+                const err = JSON.parse(xhr.responseText);
+                setStatus('Errore: ' + err.message);
+            } catch (e) {
+                setStatus('Errore HTTP ' + xhr.status);
+            }
         }
     };
-    
-    xhr.send(JSON.stringify(categoryData));
+
+    xhr.onerror = function () { setStatus('Errore di rete.'); };
+    xhr.send(JSON.stringify(data));
 }
 
-//3 update
-function editCategory(id, name, description) {
-    document.getElementById('categoryId').value = id;
-    document.getElementById('categoryName').value = name;
-    document.getElementById('description').value = description;
-    
-    document.getElementById('submitBtn').textContent = 'Aggiorna Categoria';
+// ── Carica dati nel form per la modifica ─────────────────────────────────────
+function editSupplier(id) {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', API_URL + '/' + id, true);
+
+    xhr.onload = function () {
+        if (xhr.status === 200) {
+            const s = JSON.parse(xhr.responseText);
+            document.getElementById('supplierId').value    = s.supplierID;
+            document.getElementById('companyName').value   = s.companyName   || '';
+            document.getElementById('contactName').value   = s.contactName   || '';
+            document.getElementById('contactTitle').value  = s.contactTitle  || '';
+            document.getElementById('address').value       = s.address       || '';
+            document.getElementById('city').value          = s.city          || '';
+            document.getElementById('region').value        = s.region        || '';
+            document.getElementById('postalCode').value    = s.postalCode    || '';
+            document.getElementById('country').value       = s.country       || '';
+            document.getElementById('phone').value         = s.phone         || '';
+            document.getElementById('fax').value           = s.fax           || '';
+            document.getElementById('homePage').value      = s.homePage      || '';
+
+            document.getElementById('submitBtn').textContent = '💾 Aggiorna';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            setStatus('Impossibile caricare il fornitore ' + id);
+        }
+    };
+
+    xhr.send();
 }
 
-//4 delete
-function deleteCategory(id) {
-    if (confirm('Sei sicuro di voler eliminare questo record?')) {
-        const xhr = new XMLHttpRequest();
-        xhr.open('DELETE', API_URL + '?id=' + id, true);
-        
-        xhr.onload = function() {
-            if (xhr.status === 200 || xhr.status === 204) {
-                loadCategories(); // Aggiorna la vista dopo l'eliminazione
-            } else {
-                alert('Errore durante l\'eliminazione.');
+// ── DELETE ───────────────────────────────────────────────────────────────────
+function deleteSupplier(id) {
+    if (!confirm('Eliminare il fornitore con ID ' + id + '?')) return;
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('DELETE', API_URL + '/' + id, true);
+
+    xhr.onload = function () {
+        if (xhr.status === 200 || xhr.status === 204) {
+            loadSuppliers();
+        } else {
+            try {
+                const err = JSON.parse(xhr.responseText);
+                setStatus('Errore: ' + err.message);
+            } catch (e) {
+                setStatus('Errore HTTP ' + xhr.status);
             }
-        };
-        
-        xhr.send();
-    }
+        }
+    };
+
+    xhr.onerror = function () { setStatus('Errore di rete.'); };
+    xhr.send();
 }
 
-//reset del form
+// ── Utility ──────────────────────────────────────────────────────────────────
 function resetForm() {
-    document.getElementById('categoryForm').reset();
-    document.getElementById('categoryId').value = '';
-    document.getElementById('submitBtn').textContent = 'Salva';
+    document.getElementById('supplierForm').reset();
+    document.getElementById('supplierId').value = '';
+    document.getElementById('submitBtn').textContent = '💾 Salva';
+    setStatus('');
+}
+
+function setStatus(msg) {
+    document.getElementById('statusMsg').textContent = msg;
+}
+
+// Previene XSS nel render della tabella
+function esc(val) {
+    if (!val) return '';
+    return String(val)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }

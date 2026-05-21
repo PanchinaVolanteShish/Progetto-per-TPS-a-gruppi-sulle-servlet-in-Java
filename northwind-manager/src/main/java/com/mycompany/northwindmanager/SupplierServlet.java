@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.List;
 
 @WebServlet("/api/suppliers/*")
 public class SupplierServlet extends HttpServlet {
@@ -18,19 +19,14 @@ public class SupplierServlet extends HttpServlet {
         dao = new SupplierDAO(HibernateUtil.getEntityManagerFactory());
     }
 
-    // ═══════════════════════════════════════════
-    //  Mauro Marinelli — implementerà questi due
-    // ═══════════════════════════════════════════
-
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-    
+
         setJsonResponse(resp);
-    
+
         String pathInfo = req.getPathInfo();
-    
-        // GET /api/suppliers/ → lista tutti
+
         if (pathInfo == null || pathInfo.equals("/")) {
             try {
                 List<Supplier> suppliers = dao.findAll();
@@ -48,51 +44,50 @@ public class SupplierServlet extends HttpServlet {
             }
             return;
         }
-    
-        // GET /api/suppliers/{id} → uno solo
+
         int id = extractId(req, resp);
         if (id == -1) return;
-    
+
         Supplier supplier = dao.findById(id);
         if (supplier == null) {
             sendError(resp, HttpServletResponse.SC_NOT_FOUND,
                     "Fornitore con ID " + id + " non trovato");
             return;
         }
-    
+
         resp.setStatus(HttpServletResponse.SC_OK);
         resp.getWriter().write(toJson(supplier));
     }
+
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-    
+
         setJsonResponse(resp);
-    
-        // POST deve essere su /api/suppliers/ senza ID
+
         String pathInfo = req.getPathInfo();
         if (pathInfo != null && !pathInfo.equals("/")) {
             sendError(resp, HttpServletResponse.SC_BAD_REQUEST,
                     "POST non accetta ID nell'URL. Usa /api/suppliers/");
             return;
         }
-    
+
         String body        = readBody(req);
         String companyName = extractJsonField(body, "companyName");
         String contactName = extractJsonField(body, "contactName");
         String country     = extractJsonField(body, "country");
-    
+
         if (companyName == null || companyName.isBlank()) {
-            sendError(resp, HttpServletResponse.SC_UNPROCESSABLE_ENTITY,
+            sendError(resp, 422,
                     "Il campo 'companyName' e' obbligatorio");
             return;
         }
-    
+
         Supplier supplier = new Supplier();
         supplier.setCompanyName(companyName);
         if (contactName != null) supplier.setContactName(contactName);
         if (country     != null) supplier.setCountry(country);
-    
+
         try {
             Supplier created = dao.save(supplier);
             resp.setStatus(HttpServletResponse.SC_CREATED);
@@ -102,10 +97,6 @@ public class SupplierServlet extends HttpServlet {
                     "Errore creazione fornitore: " + e.getMessage());
         }
     }
-
-    // ═══════════════════════════════════════════
-    //  Enrico Salvioli — PUT e DELETE
-    // ═══════════════════════════════════════════
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp)
@@ -123,13 +114,13 @@ public class SupplierServlet extends HttpServlet {
             return;
         }
 
-        String body       = readBody(req);
+        String body        = readBody(req);
         String companyName = extractJsonField(body, "companyName");
         String contactName = extractJsonField(body, "contactName");
         String country     = extractJsonField(body, "country");
 
         if (companyName == null || companyName.isBlank()) {
-            sendError(resp, HttpServletResponse.SC_UNPROCESSABLE_ENTITY,
+            sendError(resp, 422,
                     "Il campo 'companyName' e' obbligatorio");
             return;
         }
@@ -171,9 +162,7 @@ public class SupplierServlet extends HttpServlet {
         }
     }
 
-    // ═══════════════════════════════════════════
-    //  METODI PRIVATI DI CONTROLLO ERRORI
-    // ═══════════════════════════════════════════
+    // ── helpers ──────────────────────────────────────────────────────────────
 
     private void setJsonResponse(HttpServletResponse resp) {
         resp.setContentType("application/json");
@@ -219,12 +208,33 @@ public class SupplierServlet extends HttpServlet {
 
     private String toJson(Supplier s) {
         return String.format(
-            "{\"supplierId\":%d,\"companyName\":\"%s\",\"contactName\":\"%s\",\"country\":\"%s\"}",
-            s.getSupplierId(),
-            s.getCompanyName(),
-            s.getContactName() != null ? s.getContactName() : "",
-            s.getCountry()     != null ? s.getCountry()     : ""
+            "{\"supplierID\":%d,\"companyName\":\"%s\",\"contactName\":\"%s\"," +
+            "\"contactTitle\":\"%s\",\"address\":\"%s\",\"city\":\"%s\"," +
+            "\"region\":\"%s\",\"postalCode\":\"%s\",\"country\":\"%s\"," +
+            "\"phone\":\"%s\",\"fax\":\"%s\",\"homePage\":\"%s\"}",
+            s.getSupplierID(),
+            esc(s.getCompanyName()),
+            esc(s.getContactName()),
+            esc(s.getContactTitle()),
+            esc(s.getAddress()),
+            esc(s.getCity()),
+            esc(s.getRegion()),
+            esc(s.getPostalCode()),
+            esc(s.getCountry()),
+            esc(s.getPhone()),
+            esc(s.getFax()),
+            esc(s.getHomePage())
         );
+    }
+
+    // evita null e virgolette rotte nel JSON
+    private String esc(String v) {
+        if (v == null) return "";
+        return v.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 
     private void sendError(HttpServletResponse resp, int status, String message)
